@@ -63,9 +63,12 @@ func sendSku(skus []string) {
 		panic(err)
 	}
 	for _, sku := range skus {
-		fmt.Fprintf(conn, sku)
+		_, err := fmt.Fprint(conn, sku)
+		log.Fatalln("could not write to socket:", err)
 	}
 
-	conn.Close()
 	wg.Done()
+
+	// ignore error, message was sent
+	_ = conn.Close()
 }

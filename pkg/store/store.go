@@ -61,9 +61,12 @@ func (d *DB) Insert(sku string) {
 // GetReader return an implementation of io.Reader
 func (d *DB) GetReader() io.Reader {
 	// here would be good to clear skus array and free some memory :)
-	reader := StoreReader{skus: d.skus}
+	reader := Reader{skus: d.skus}
 	return &reader
 }
 
+// DuplicatedCount return the number of duplicated skus discarded
 func (d *DB) DuplicatedCount() int { return d.dups }
-func (d *DB) SKUCount() int        { return d.count }
+
+// SKUCount reutrns the number of unique skus processed
+func (d *DB) SKUCount() int { return d.count }

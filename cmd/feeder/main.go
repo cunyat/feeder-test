@@ -9,38 +9,52 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"strings"
 	"time"
+
+	"github.com/cunyat/feeder/pkg/store"
 )
 
 const addr = "127.0.0.1:4000"
 const maxConn = 5
 
-func main() {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+var ttl = 60 * time.Second
 
+func main() {
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatalf("could not listen in port %d: %s", 4000, err.Error())
 	}
 
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(60*time.Second))
+	skus := make(chan string, 1)
+	store := store.New()
+	go func() {
+		for sku := range skus {
+			store.Insert(sku)
+		}
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), ttl)
+	for i := 0; i < maxConn; i++ {
+		go listen(ctx, ln, skus)
+	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
 
 	go func() {
 		<-c
-		log.Println("Got SIGINT, stopping server...")
+		fmt.Println("Got SIGINT, stopping server gracefully...")
 		cancel()
 	}()
 
-	for i := 0; i < maxConn; i++ {
-		go listen(ctx, ln)
-	}
-
 	<-ctx.Done()
+	close(c)
+	close(skus)
+
+	fmt.Printf("Received %d unique product skus, %d duplicates, %d discard values\n", store.SKUCount(), store.DuplicatedCount(), 0)
 }
 
-func listen(ctx context.Context, ln net.Listener) {
+func listen(ctx context.Context, ln net.Listener, out chan string) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -52,21 +66,17 @@ func listen(ctx context.Context, ln net.Listener) {
 				log.Fatalf("error accepting a new connection: %s", err.Error())
 			}
 
-			var skus []string
 			for {
 				msg, err := bufio.NewReader(conn).ReadString('\n')
 				if err == io.EOF {
 					break
 				}
 				if err != nil {
-					log.Println("could not read incomming message: ", err.Error())
+					fmt.Println("could not read incomming message: ", err.Error())
 				}
 
-				msg = strings.TrimRight(msg, "\n")
-				skus = append(skus, msg)
+				out <- msg
 			}
-
-			fmt.Printf("got: %s\n", skus)
 		}
 	}
 }

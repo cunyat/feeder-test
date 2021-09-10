@@ -10,7 +10,7 @@ import (
 )
 
 func TestReader_ReadsAllSkus(t *testing.T) {
-	r := &StoreReader{
+	r := &Reader{
 		skus: utils.GenerateSKUs(20),
 	}
 
@@ -31,7 +31,7 @@ func TestReader_ReadsAllSkus(t *testing.T) {
 }
 
 func TestReader_EmptyStore(t *testing.T) {
-	r := &StoreReader{}
+	r := &Reader{}
 
 	all, err := ioutil.ReadAll(r)
 	if err != nil {

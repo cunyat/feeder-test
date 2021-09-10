@@ -1,6 +1,10 @@
 
 ## Assumptions
 
+### SKUs format
+
+Tests doesn't specify if sku is case-sensitive, or if all characters must be uppercase (like in examples). 
+
 ### Deduplication & "database" (`pkg/store`)
 It's obious we need some sort of storage in order to check for duplicates and finally count valid, duplicateds and bad skus.
 I decided to implement a simple in memory store. It keeps skus sorted to optimize searching for duplicates.

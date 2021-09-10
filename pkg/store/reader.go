@@ -2,16 +2,17 @@ package store
 
 import "io"
 
-type StoreReader struct {
+// Reader satisfies io.Reader interface
+type Reader struct {
 	skus []string
 }
 
-var _ io.Reader = &StoreReader{}
+var _ io.Reader = &Reader{}
 
 // Read implements io.Reader interface
 // this allow to write into file (or others) a large dataset
 // readed skus will be deleted from the slice.
-func (d *StoreReader) Read(p []byte) (n int, err error) {
+func (d *Reader) Read(p []byte) (n int, err error) {
 	max := len(p)
 	i := 0
 
