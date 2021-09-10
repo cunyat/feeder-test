@@ -25,7 +25,7 @@ func TestReader_ReadsAllSkus(t *testing.T) {
 		t.Error("given skus and obtained bytes not match in length")
 	}
 
-	if bytes.Compare(all, expected) != 0 {
+	if !bytes.Equal(all, expected) {
 		t.Error("given skus and obtained not match")
 	}
 }
