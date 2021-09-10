@@ -38,7 +38,6 @@ func main() {
 	}
 
 	<-ctx.Done()
-
 }
 
 func listen(ctx context.Context, ln net.Listener) {
