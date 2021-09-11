@@ -1,7 +1,9 @@
 package store
 
 import (
+	"bufio"
 	"bytes"
+	"io"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -40,5 +42,21 @@ func TestReader_EmptyStore(t *testing.T) {
 
 	if len(all) != 0 {
 		t.Error("empty store should return emtpy bytes slice")
+	}
+}
+
+func BenchmarkReader(b *testing.B) {
+	r := &Reader{skus: utils.GenerateSKUs(100000)}
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		r := bufio.NewReader(r)
+		_, err := r.ReadString('\n')
+		for err == nil {
+			_, err = r.ReadString('\n')
+		}
+		if err != io.EOF {
+			panic(err)
+		}
 	}
 }

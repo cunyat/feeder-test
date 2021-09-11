@@ -1,6 +1,10 @@
 package store
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/cunyat/feeder/pkg/utils"
+)
 
 func TestStore_Insert(t *testing.T) {
 	tests := []struct {
@@ -49,5 +53,17 @@ func TestStore_Insert(t *testing.T) {
 				t.Errorf("expected count: %d, got: %d", tt.expCount, count)
 			}
 		})
+	}
+}
+
+func BenchmarkStore(b *testing.B) {
+	db := New()
+	var skus = utils.GenerateSKUs(100000)
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		for _, sku := range skus {
+			db.Insert(sku)
+		}
 	}
 }

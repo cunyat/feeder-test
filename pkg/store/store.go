@@ -6,6 +6,13 @@ import (
 	"sync"
 )
 
+// SKUStore defines the contract for a sku store.
+type SKUStore interface {
+	Insert(sku string)
+	DuplicatedCount() int
+	SKUCount() int
+}
+
 // DB defines an inmemory database to hold received skus
 type DB struct {
 
