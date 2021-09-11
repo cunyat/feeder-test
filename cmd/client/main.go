@@ -64,7 +64,9 @@ func sendSku(skus []string) {
 	}
 	for _, sku := range skus {
 		_, err := fmt.Fprint(conn, sku)
-		log.Fatalln("could not write to socket:", err)
+		if err != nil {
+			log.Fatalln("could not write to socket:", err)
+		}
 	}
 
 	wg.Done()
