@@ -48,7 +48,7 @@ func TestStore_Insert(t *testing.T) {
 				t.Errorf("expected duplicates: %d, got: %d", tt.expDups, dups)
 			}
 
-			count := db.SKUCount()
+			count := db.UniqueCount()
 			if count != tt.expCount {
 				t.Errorf("expected count: %d, got: %d", tt.expCount, count)
 			}

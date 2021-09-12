@@ -6,18 +6,11 @@ import (
 	"sync"
 )
 
-// SKUStore defines the contract for a sku store.
-type SKUStore interface {
-	Insert(sku string)
-	DuplicatedCount() int
-	SKUCount() int
-}
+// DeduplicatedStore defines an inmemory database to hold received skus
+type DeduplicatedStore struct {
 
-// DB defines an inmemory database to hold received skus
-type DB struct {
-
-	// skus holds sorted skus received
-	skus []string
+	// values holds sorted values received
+	values []string
 
 	// dups holds the number of duplicated skus
 	dups int
@@ -30,18 +23,17 @@ type DB struct {
 }
 
 // New initializes DB struct
-func New() *DB {
-	return &DB{}
+func New() *DeduplicatedStore {
+	return &DeduplicatedStore{}
 }
 
-// Insert receives new skus and uses Validator interface to
-// determine if its a valid sku or not
-func (d *DB) Insert(sku string) {
+// Insert adds a new value in the store
+func (d *DeduplicatedStore) Insert(value string) {
 	d.mutex.RLock()
-	i := sort.SearchStrings(d.skus, sku)
+	i := sort.SearchStrings(d.values, value)
 
 	// check if its duplicated value
-	if i < len(d.skus) && d.skus[i] == sku {
+	if i < len(d.values) && d.values[i] == value {
 		d.dups++
 		d.mutex.RUnlock()
 		return
@@ -51,29 +43,29 @@ func (d *DB) Insert(sku string) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	// a new sku will be inserted
+	// a new value will be inserted
 	d.count++
 
 	// if its the last value, just append it at the end
-	if i == len(d.skus) {
-		d.skus = append(d.skus, sku)
+	if i == len(d.values) {
+		d.values = append(d.values, value)
 		return
 	}
 
-	// make space to insert the new sku
-	d.skus = append(d.skus[:i+1], d.skus[i:]...)
-	d.skus[i] = sku
+	// make space to insert the new value
+	d.values = append(d.values[:i+1], d.values[i:]...)
+	d.values[i] = value
 }
 
 // GetReader return an implementation of io.Reader
-func (d *DB) GetReader() io.Reader {
-	// here would be good to clear skus array and free some memory :)
-	reader := Reader{skus: d.skus}
+func (d *DeduplicatedStore) GetReader() io.Reader {
+	// here would be good to clear value array and free some memory :)
+	reader := Reader{skus: d.values}
 	return &reader
 }
 
-// DuplicatedCount return the number of duplicated skus discarded
-func (d *DB) DuplicatedCount() int { return d.dups }
+// DuplicatedCount return the number of duplicated value discarded
+func (d *DeduplicatedStore) DuplicatedCount() int { return d.dups }
 
-// SKUCount reutrns the number of unique skus processed
-func (d *DB) SKUCount() int { return d.count }
+// UniqueCount reutrns the number of unique value processed
+func (d *DeduplicatedStore) UniqueCount() int { return d.count }
