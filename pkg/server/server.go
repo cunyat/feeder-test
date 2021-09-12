@@ -10,10 +10,12 @@ import (
 
 // Server manages incoming connections
 type Server struct {
+	// addr defines the address to listen for incoing connections
 	addr string
 	// maxConn defines the maximum number of concurrent connections
 	maxConn int
-	out     chan string
+	// out is the channel where we will send received messages
+	out chan string
 }
 
 // New returns a new instance of a Server
@@ -22,7 +24,6 @@ func New(addr string, maxConn int, out chan string) *Server {
 }
 
 func (s *Server) Start(ctx context.Context) error {
-
 	errs := make(chan error, 2)
 
 	ln, err := net.Listen("tcp", s.addr)
@@ -30,13 +31,11 @@ func (s *Server) Start(ctx context.Context) error {
 		return fmt.Errorf("could not listen in %s: %w", s.addr, err)
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	for i := 0; i < s.maxConn; i++ {
-		go listen(ctx, ln, cancel, s.out, errs)
+		go listen(ctx, ln, s.out, errs)
 	}
 
+	// Wait until listeners returns error or context finished
 	select {
 	case err := <-errs:
 		return err
@@ -45,7 +44,7 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 }
 
-func listen(ctx context.Context, ln net.Listener, cancel func(), out chan string, errs chan error) {
+func listen(ctx context.Context, ln net.Listener, out chan string, errs chan error) {
 	for {
 		select {
 		case <-ctx.Done():
