@@ -5,28 +5,33 @@ import (
 	"sync"
 )
 
+// Validator defines the function type for validating skus
 type Validator func(string) error
 
+// Store defines the contract of a store
 type Store interface {
 	Insert(string)
 }
 
+// Manager handles incoming messages, validates and stores them
 type Manager struct {
-	store Store
+	store     Store
 	validator Validator
 
 	countInvalid int
-	mutex sync.Mutex
+	mutex        sync.Mutex
 }
 
+// NewManager returns a new instance of Manager
 func NewManager(store Store, validator Validator) *Manager {
 	return &Manager{
-		store: store,
-		validator: validator,
+		store:        store,
+		validator:    validator,
 		countInvalid: 0,
 	}
 }
 
+// HandleMessage handles a new incoming message and stores it in store if it is valid
 func (m *Manager) HandleMessage(sku string) {
 	err := m.validator(sku)
 	if err != nil {

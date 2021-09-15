@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// ValidateSKU return an error if value it's not a valid sku
 func ValidateSKU(value string) error {
 	if len(value) != 10 && len(value) != 11 {
 		return fmt.Errorf("invalid sku length (%d)", len(value))
@@ -41,7 +42,7 @@ func validateChar(i int, ch int32) error {
 			return fmt.Errorf("sku must be finished with new-line sequence")
 		}
 	case 10:
-		if ch != '\n'{
+		if ch != '\n' {
 			return fmt.Errorf("sku must be finished with new-line sequence")
 		}
 	default:
@@ -51,6 +52,7 @@ func validateChar(i int, ch int32) error {
 	return nil
 }
 
+// IsTerminateSequence return if the given value matches a terminate sequence
 func IsTerminateSequence(value string) bool {
 	return value == "terminate\r\n" || value == "terminate\n"
 }

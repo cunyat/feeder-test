@@ -65,7 +65,6 @@ func sendSKU(sku string) {
 		panic(err)
 	}
 
-
 	_, err = fmt.Fprint(conn, sku)
 	if err != nil {
 		log.Fatalln("could not write to socket:", err)

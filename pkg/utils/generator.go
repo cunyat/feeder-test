@@ -11,10 +11,12 @@ var numbers = []byte("0123456789")
 
 var rsource = rand.NewSource(time.Now().UnixNano())
 
+// GenerateSKU generates a valid sku for the application
 func GenerateSKU() string {
 	return fmt.Sprintf("%s-%s\n", pick(letters, 4), pick(numbers, 4))
 }
 
+// GenerateSKUs generates many skus
 func GenerateSKUs(count int) []string {
 	skus := make([]string, count)
 	for i := range skus {

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 )
@@ -22,6 +23,7 @@ func New(addr string, maxConn int, out chan string) *Server {
 	return &Server{addr: addr, maxConn: maxConn, out: out}
 }
 
+// Start initializes listeners and waits for new connections
 func (s *Server) Start(ctx context.Context) error {
 	errs := make(chan error, 2)
 
@@ -40,7 +42,6 @@ func (s *Server) Start(ctx context.Context) error {
 		return err
 	case <-ctx.Done():
 		return nil
-
 	}
 }
 
@@ -57,8 +58,11 @@ func listen(ctx context.Context, ln net.Listener, out chan string, errs chan err
 			}
 
 			msg, err := ioutil.ReadAll(conn)
-			fmt.Println(err)
 			if err != nil {
+				if err == io.EOF {
+					continue
+				}
+				// send error to parent routine
 				errs <- fmt.Errorf("could not read incomming message: %s", err.Error())
 			}
 
