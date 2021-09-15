@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/cunyat/feeder/internal/feeder"
@@ -17,11 +16,4 @@ func main() {
 	app := feeder.New(addr, maxConn, st, ttl)
 
 	app.Start()
-
-	fmt.Printf(
-		"Received %d unique product skus, %d duplicates, %d discard values\n",
-		st.UniqueCount(),
-		st.DuplicatedCount(),
-		0,
-	)
 }

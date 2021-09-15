@@ -3,6 +3,8 @@ package feeder
 import (
 	"context"
 	"fmt"
+	"github.com/cunyat/feeder/pkg/store"
+	"io"
 	"os"
 	"os/signal"
 	"time"
@@ -10,26 +12,20 @@ import (
 	"github.com/cunyat/feeder/pkg/server"
 )
 
-type MessageHandler interface {
-	HandleMessage(string)
-}
-
-type Store interface {
-	Insert(string)
-}
-
 type Application struct {
 	ttl     time.Duration
 	srv     *server.Server
-	handler MessageHandler
+	store   *store.DeduplicatedStore
+	handler *Manager
 
 	skus   chan string
 	sigint chan os.Signal
 }
 
-func New(addr string, maxConn int, store Store, ttl time.Duration) *Application {
+func New(addr string, maxConn int, store *store.DeduplicatedStore, ttl time.Duration) *Application {
 	a := &Application{
 		ttl:    ttl,
+		store: store,
 		handler: NewManager(store, ValidateSKU),
 		skus:   make(chan string, 5),
 		sigint: make(chan os.Signal, 1),
@@ -45,13 +41,14 @@ func (a *Application) Start() {
 
 	listenSigInt(a.sigint, cancel)
 
-	go func(handler MessageHandler, skus chan string, cancel context.CancelFunc) {
+	go func(handler *Manager, skus chan string, cancel context.CancelFunc) {
 		for sku := range skus {
 			if IsTerminateSequence(sku) {
 				cancel()
+				return
 			}
 
-			handler.HandleMessage(sku)
+			a.handler.HandleMessage(sku)
 		}
 	}(a.handler, a.skus, cancel)
 
@@ -62,7 +59,30 @@ func (a *Application) Start() {
 
 	a.Shutdown()
 
-	fmt.Println()
+	fmt.Printf(
+		"Received %d unique product skus, %d duplicates, %d discard values\n",
+		a.store.UniqueCount(),
+		a.store.DuplicatedCount(),
+		a.handler.countInvalid,
+	)
+
+	file, err := os.OpenFile("out/skus.txt", os.O_RDWR | os.O_CREATE, 0755)
+	if err != nil {
+		fmt.Println("Could not write output file:", err)
+		return
+	}
+
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			fmt.Println("Error closing file", err)
+		}
+	}(file)
+
+	_, err = io.Copy(file, a.store.GetReader())
+	if err != nil {
+		fmt.Println("Error writting to output file")
+	}
 }
 
 func (a *Application) Shutdown() {

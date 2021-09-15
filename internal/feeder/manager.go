@@ -6,6 +6,10 @@ import (
 
 type Validator func(string) error
 
+type Store interface {
+	Insert(string)
+}
+
 type Manager struct {
 	store Store
 	validator Validator
