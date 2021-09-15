@@ -8,16 +8,16 @@ func TestValidateSKU(t *testing.T) {
 		sku   string
 		valid bool
 	}{
-		{sku: "abcd-1234\n", valid: true, name: "lowercase valid sku"},
-		{sku: "ASDF-1234\n", valid: true, name: "uppercase valid sku"},
-		{sku: "abcd-1234\r\n", valid: true, name: "windows new-line sequence"},
-		{sku: "a1cd-1234\n", valid: false, name: "number in first chunk"},
-		{sku: "abcd-1a34\n", valid: false, name: "character in first chunk"},
-		{sku: "abcd_1234\n", valid: false, name: "bad separator"},
-		{sku: "abcd-1234", valid: false, name: "no new-line sequence"},
-		{sku: "abcd-1234\r", valid: false, name: "bad new-line sequence"},
-		{sku: "acd-1234\n", valid: false, name: "less characters"},
-		{sku: "aecd-123\n", valid: false, name: "less numbers"},
+		{valid: true, sku: "abcd-1234\n", name: "lowercase valid sku"},
+		{valid: true, sku: "ASDF-4925\n", name: "uppercase valid sku"},
+		{valid: true, sku: "abcd-2794\r\n", name: "windows new-line sequence"},
+		{valid: false, sku: "a1cd-1234\n", name: "number in first chunk"},
+		{valid: false, sku: "abcd-1a34\n", name: "character in first chunk"},
+		{valid: false, sku: "abcd_1234\n", name: "bad separator"},
+		{valid: false, sku: "abcd-1234", name: "no new-line sequence"},
+		{valid: false, sku: "abcd-1234\r", name: "bad new-line sequence"},
+		{valid: false, sku: "acd-1234\n", name: "less characters"},
+		{valid: false, sku: "aecd-123\n", name: "less numbers"},
 	}
 
 	t.Parallel()
