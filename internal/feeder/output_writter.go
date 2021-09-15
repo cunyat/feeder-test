@@ -31,7 +31,7 @@ func (w OutputWritter) Write(input io.Reader) error {
 
 	err = file.Close()
 	if err != nil {
-		return fmt.Errorf("error closing file: %wS", err)
+		return fmt.Errorf("error closing file: %w", err)
 	}
 
 	return nil

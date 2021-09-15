@@ -68,7 +68,7 @@ func (a *Application) Start() {
 	a.Shutdown()
 
 	if err := a.writter.Write(a.store.GetReader()); err != nil {
-		fmt.Println("Error writting output file: ", err)
+		fmt.Printf("error writting output file: %s", err)
 	}
 
 	fmt.Printf(
