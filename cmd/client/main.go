@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math/rand"
 	"net"
 	"os"
 	"os/signal"
@@ -15,21 +14,22 @@ import (
 	"github.com/cunyat/feeder/pkg/utils"
 )
 
-var chunks, max int
+var count, sent int
 var terminate bool
 var wg sync.WaitGroup
 
 func main() {
-	flag.IntVar(&chunks, "chunks", 40, "chunks of skus to send")
-	flag.IntVar(&max, "max", 5, "max skus per chunk (random)")
+	flag.IntVar(&count, "count", 40, "number of skus to send")
 	flag.BoolVar(&terminate, "terminate", false, "send terminate at the end")
+	flag.Parse()
 
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(60*time.Second))
 
-	for i := 0; i < chunks; i++ {
-		skus := utils.GenerateSKUs((rand.Int() % (max)) + 1)
+	for i := 0; i < count; i++ {
+		sku := utils.GenerateSKU()
 		wg.Add(1)
-		go sendSku(skus)
+		sent++
+		go sendSKU(sku)
 	}
 
 	s := make(chan os.Signal, 1)
@@ -45,15 +45,17 @@ func main() {
 		wg.Wait()
 		if terminate {
 			wg.Add(1)
-			sendSku([]string{"terminate\n"})
+			sendSKU("terminate\n")
 		}
 		cancel()
 	}()
 
 	<-ctx.Done()
+
+	fmt.Println("total skus:", sent)
 }
 
-func sendSku(skus []string) {
+func sendSKU(sku string) {
 	addr, err := net.ResolveTCPAddr("tcp", ":4000")
 	if err != nil {
 		panic(err)
@@ -62,15 +64,14 @@ func sendSku(skus []string) {
 	if err != nil {
 		panic(err)
 	}
-	for _, sku := range skus {
-		_, err := fmt.Fprint(conn, sku)
-		if err != nil {
-			log.Fatalln("could not write to socket:", err)
-		}
+
+
+	_, err = fmt.Fprint(conn, sku)
+	if err != nil {
+		log.Fatalln("could not write to socket:", err)
 	}
 
 	wg.Done()
 
-	// ignore error, message was sent
 	_ = conn.Close()
 }

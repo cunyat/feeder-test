@@ -1,10 +1,9 @@
 package server
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net"
 )
 
@@ -41,6 +40,7 @@ func (s *Server) Start(ctx context.Context) error {
 		return err
 	case <-ctx.Done():
 		return nil
+
 	}
 }
 
@@ -53,19 +53,16 @@ func listen(ctx context.Context, ln net.Listener, out chan string, errs chan err
 			conn, err := ln.Accept()
 			if err != nil {
 				errs <- fmt.Errorf("error accepting a new connection: %s", err.Error())
+				return
 			}
 
-			for {
-				msg, err := bufio.NewReader(conn).ReadString('\n')
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					errs <- fmt.Errorf("could not read incomming message: %s", err.Error())
-				}
-
-				out <- msg
+			msg, err := ioutil.ReadAll(conn)
+			fmt.Println(err)
+			if err != nil {
+				errs <- fmt.Errorf("could not read incomming message: %s", err.Error())
 			}
+
+			out <- string(msg)
 		}
 	}
 }
