@@ -18,6 +18,8 @@ var count, sent int
 var terminate bool
 var wg sync.WaitGroup
 
+const workers = 8
+
 func main() {
 	flag.IntVar(&count, "count", 40, "number of skus to send")
 	flag.BoolVar(&terminate, "terminate", false, "send terminate at the end")
@@ -25,11 +27,21 @@ func main() {
 
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(60*time.Second))
 
+	skus := make(chan string, 8)
+
+	for i := 0; i < workers; i++ {
+		go func(skus chan string) {
+			for sku := range skus {
+				sendSKU(sku)
+			}
+		}(skus)
+	}
+
 	for i := 0; i < count; i++ {
 		sku := utils.GenerateSKU()
 		wg.Add(1)
 		sent++
-		go sendSKU(sku)
+		skus <- sku
 	}
 
 	s := make(chan os.Signal, 1)
@@ -58,11 +70,11 @@ func main() {
 func sendSKU(sku string) {
 	addr, err := net.ResolveTCPAddr("tcp", ":4000")
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 	conn, err := net.DialTCP("tcp", nil, addr)
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
 	_, err = fmt.Fprint(conn, sku)
