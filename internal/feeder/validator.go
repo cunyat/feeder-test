@@ -11,6 +11,11 @@ func ValidateSKU(value string) error {
 		return fmt.Errorf("invalid sku length (%d)", len(value))
 	}
 
+	// Validate ends with new line (\n)
+	if value[len(value)-1] != '\n' {
+		return fmt.Errorf("sku must be finished with new-line sequence")
+	}
+
 	// convert to lowercase to compare
 	value = strings.ToLower(value)
 	for i, char := range value {
