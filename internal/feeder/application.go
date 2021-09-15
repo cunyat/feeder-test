@@ -10,16 +10,18 @@ import (
 	"github.com/cunyat/feeder/pkg/server"
 )
 
-type MessageHandler func(context.Context, string)
+type MessageHandler interface {
+	HandleMessage(string)
+}
 
 type Store interface {
 	Insert(string)
 }
 
 type Application struct {
-	ttl   time.Duration
-	srv   *server.Server
-	store Store
+	ttl     time.Duration
+	srv     *server.Server
+	handler MessageHandler
 
 	skus   chan string
 	sigint chan os.Signal
@@ -28,7 +30,7 @@ type Application struct {
 func New(addr string, maxConn int, store Store, ttl time.Duration) *Application {
 	a := &Application{
 		ttl:    ttl,
-		store:  store,
+		handler: NewManager(store, ValidateSKU),
 		skus:   make(chan string, 5),
 		sigint: make(chan os.Signal, 1),
 	}
@@ -40,14 +42,18 @@ func New(addr string, maxConn int, store Store, ttl time.Duration) *Application 
 
 func (a *Application) Start() {
 	ctx, cancel := context.WithTimeout(context.Background(), a.ttl)
+
 	listenSigInt(a.sigint, cancel)
 
-	// this must not be here, initialize a service that listens chan?
-	go func(s Store, skus chan string) {
+	go func(handler MessageHandler, skus chan string, cancel context.CancelFunc) {
 		for sku := range skus {
-			s.Insert(sku)
+			if IsTerminateSequence(sku) {
+				cancel()
+			}
+
+			handler.HandleMessage(sku)
 		}
-	}(a.store, a.skus)
+	}(a.handler, a.skus, cancel)
 
 	err := a.srv.Start(ctx)
 	if err != nil {
@@ -55,6 +61,8 @@ func (a *Application) Start() {
 	}
 
 	a.Shutdown()
+
+	fmt.Println()
 }
 
 func (a *Application) Shutdown() {

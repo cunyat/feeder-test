@@ -10,19 +10,18 @@ import (
 
 const addr = "127.0.0.1:4000"
 const maxConn = 5
-
-var ttl = 60 * time.Second
+const ttl = 60 * time.Second
 
 func main() {
-	store := store.New()
-	app := feeder.New(addr, maxConn, store, ttl)
+	st := store.New()
+	app := feeder.New(addr, maxConn, st, ttl)
 
 	app.Start()
 
 	fmt.Printf(
 		"Received %d unique product skus, %d duplicates, %d discard values\n",
-		store.UniqueCount(),
-		store.DuplicatedCount(),
+		st.UniqueCount(),
+		st.DuplicatedCount(),
 		0,
 	)
 }
