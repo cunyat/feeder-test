@@ -1,6 +1,7 @@
 package feeder
 
 import (
+	"strings"
 	"sync"
 )
 
@@ -35,6 +36,6 @@ func (m *Manager) HandleMessage(sku string) {
 		m.countInvalid++
 		return
 	}
-
+	sku = strings.ToUpper(sku)
 	m.store.Insert(sku)
 }

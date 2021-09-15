@@ -46,7 +46,7 @@ func (d *DeduplicatedStore) Insert(value string) {
 	// a new value will be inserted
 	d.count++
 
-	// if its the last value, just append it at the end
+	// if it's the last value, just append it at the end
 	if i == len(d.values) {
 		d.values = append(d.values, value)
 		return
