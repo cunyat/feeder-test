@@ -2,37 +2,36 @@ package feeder
 
 import (
 	"fmt"
-	"io"
 	"os"
+	"time"
 )
 
-// OutputWritter is the responsible for writting obtained skus to the given output file
-type OutputWritter struct {
-	outfile string
+// LogWritter is the responsible for writting obtained skus to the given output file
+type LogWritter struct {
+	file *os.File
 }
 
-// NewOutputWritter creates a new instance of OutputWritter
-func NewOutputWritter(outfile string) *OutputWritter {
-	return &OutputWritter{outfile: outfile}
+// NewLogWritter creates a new instance of OutputWritter
+func NewLogWritter() (*LogWritter, error) {
+	filename := fmt.Sprintf("skus-%d.log", time.Now().Unix())
+	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("could not open output file: %w", err)
+	}
+
+	return &LogWritter{file: file}, nil
+}
+
+// Close closes opened file
+func (w *LogWritter) Close() error {
+	return w.file.Close()
 }
 
 // Write writes data from io.Reader and copies it into the output file
 // it will override any previous existing file
-func (w OutputWritter) Write(input io.Reader) error {
-	file, err := os.OpenFile(w.outfile, os.O_RDWR|os.O_CREATE, 0755)
+func (w *LogWritter) Write(value string) {
+	_, err := fmt.Fprintf(w.file, "%s - %s", time.Now().Format(time.RFC3339), value)
 	if err != nil {
-		return fmt.Errorf("could not open output file: %w", err)
+		fmt.Printf("error writting into log: %s", err)
 	}
-
-	_, err = io.Copy(file, input)
-	if err != nil {
-		return fmt.Errorf("error writting to output file: %w", err)
-	}
-
-	err = file.Close()
-	if err != nil {
-		return fmt.Errorf("error closing file: %w", err)
-	}
-
-	return nil
 }

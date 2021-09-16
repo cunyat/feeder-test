@@ -8,7 +8,7 @@ import (
 // Validator defines the function type for validating skus
 type Validator func(string) error
 
-// Store defines the contract of a store
+// Store defines the contract of a service to store valid skus
 type Store interface {
 	Insert(string)
 }

@@ -10,13 +10,7 @@ In `Makefile` you will find command to run, test and lint the application.
 - `make test`: to execute tests
 - `make lint`: to execute linter
 
-The server, also accepts the output file as a parameter, to indicate it you should either build the application and execute the binary or use go run command:
-```bash
-make build
-feeder -output out/skus-for-today.txt
--- or --
-go run cmd/feeder/main.go -output file-to-store-skus.txt
-```
+The applications writes a log in the current directory, with name: `skus- {timestamp}.log` 
 
 
 I also provide a simple script that sends random skus to the server (`make run-client`). It accepts two parameters for customization but should be run directly with `go run`:

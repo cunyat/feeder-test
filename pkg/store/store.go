@@ -1,13 +1,15 @@
 package store
 
 import (
-	"io"
 	"sort"
 	"sync"
 )
 
-// DeduplicatedStore defines an inmemory database to hold received skus
-type DeduplicatedStore struct {
+// Subscriber defines the function type of a store listener
+type Subscriber func(string)
+
+// Store defines an inmemory database to hold received skus
+type Store struct {
 
 	// values holds sorted values received
 	values []string
@@ -20,15 +22,19 @@ type DeduplicatedStore struct {
 
 	// mutex to protect concurrent read and write ops
 	mutex sync.RWMutex
+
+	// a subscriber to notify new inserted values
+	subscriber    Subscriber
+	hasSubscriber bool
 }
 
 // New initializes DB struct
-func New() *DeduplicatedStore {
-	return &DeduplicatedStore{}
+func New() *Store {
+	return &Store{}
 }
 
 // Insert adds a new value in the store
-func (d *DeduplicatedStore) Insert(value string) {
+func (d *Store) Insert(value string) {
 	d.mutex.RLock()
 	i := sort.SearchStrings(d.values, value)
 
@@ -40,11 +46,15 @@ func (d *DeduplicatedStore) Insert(value string) {
 	}
 	d.mutex.RUnlock()
 
+	// a new value will be inserted, lock array and increment counter
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
-
-	// a new value will be inserted
 	d.count++
+
+	// if there is any subscriber call it.
+	if d.hasSubscriber {
+		d.subscriber(value)
+	}
 
 	// if it's the last value, just append it at the end
 	if i == len(d.values) {
@@ -57,15 +67,14 @@ func (d *DeduplicatedStore) Insert(value string) {
 	d.values[i] = value
 }
 
-// GetReader return an implementation of io.Reader
-func (d *DeduplicatedStore) GetReader() io.Reader {
-	// here would be good to clear value array and free some memory :)
-	reader := Reader{skus: d.values}
-	return &reader
+// Subscribe registers a listener for new placed values
+func (d *Store) Subscribe(sub Subscriber) {
+	d.subscriber = sub
+	d.hasSubscriber = true
 }
 
 // DuplicatedCount return the number of duplicated value discarded
-func (d *DeduplicatedStore) DuplicatedCount() int { return d.dups }
+func (d *Store) DuplicatedCount() int { return d.dups }
 
 // UniqueCount reutrns the number of unique value processed
-func (d *DeduplicatedStore) UniqueCount() int { return d.count }
+func (d *Store) UniqueCount() int { return d.count }

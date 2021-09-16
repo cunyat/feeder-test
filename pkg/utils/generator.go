@@ -26,6 +26,7 @@ func GenerateSKUs(count int) []string {
 	return skus
 }
 
+// pick return a random element from the given source
 func pick(source []byte, count int) string {
 	b := make([]byte, count)
 
@@ -36,6 +37,7 @@ func pick(source []byte, count int) string {
 	return string(b)
 }
 
+// randInt return a random integer
 func randInt(max int) int64 {
 	return rsource.Int63() % int64(max)
 }

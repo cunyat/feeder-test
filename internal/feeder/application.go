@@ -3,6 +3,7 @@ package feeder
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"time"
@@ -18,27 +19,38 @@ type Application struct {
 	// server that listens for incoming messages
 	srv *server.Server
 	// store to keep skus deduplicated
-	store *store.DeduplicatedStore
+	store *store.Store
 	// manager that handles incoming messages
 	manager *Manager
 	// writter writes results in a file
-	writter *OutputWritter
+	writter *LogWritter
 
 	skus   chan string
 	sigint chan os.Signal
 }
 
 // New generates a new instance of Application
-func New(addr string, maxConn int, ttl time.Duration, outfile string) *Application {
+func New(addr string, maxConn int, ttl time.Duration) *Application {
+	writter, err := NewLogWritter()
+	if err != nil {
+		log.Fatalf("could not open log file: %s", err)
+	}
+
+	// Initialize store and subscribe logger
+	store := store.New()
+	store.Subscribe(writter.Write)
+
+	manager := NewManager(store, ValidateSKU)
+
 	a := &Application{
 		ttl:     ttl,
-		store:   store.New(),
-		writter: NewOutputWritter(outfile),
-		skus:    make(chan string, 5),
+		store:   store,
+		manager: manager,
+		writter: writter,
+		skus:    make(chan string, 10),
 		sigint:  make(chan os.Signal, 1),
 	}
 
-	a.manager = NewManager(a.store, ValidateSKU)
 	a.srv = server.New(addr, maxConn, a.skus)
 
 	return a
@@ -49,27 +61,13 @@ func (a *Application) Start() {
 	ctx, cancel := context.WithTimeout(context.Background(), a.ttl)
 	listenSigInt(a.sigint, cancel)
 
-	go func(handler *Manager, skus chan string, cancel context.CancelFunc) {
-		for sku := range skus {
-			if IsTerminateSequence(sku) {
-				fmt.Println("Got terminate sequece, stopping server gracefully...")
-				cancel()
-				return
-			}
-
-			a.manager.HandleMessage(sku)
-		}
-	}(a.manager, a.skus, cancel)
+	go a.handleMessages(a.skus, a.manager, cancel)
 
 	if err := a.srv.Start(ctx); err != nil {
 		fmt.Printf("Got error from server: %s", err)
 	}
 
 	a.Shutdown()
-
-	if err := a.writter.Write(a.store.GetReader()); err != nil {
-		fmt.Printf("error writting output file: %s", err)
-	}
 
 	fmt.Printf(
 		"Received %d unique product skus, %d duplicates, %d discard values\n",
@@ -79,8 +77,13 @@ func (a *Application) Start() {
 	)
 }
 
-// Shutdown closes open chans
+// Shutdown closes open resources and channels
 func (a *Application) Shutdown() {
+	err := a.writter.Close()
+	if err != nil {
+		fmt.Printf("error closing log file: %s", err)
+	}
+
 	close(a.sigint)
 	close(a.skus)
 }
@@ -95,4 +98,18 @@ func listenSigInt(c chan os.Signal, cancel func()) {
 		}
 		cancel()
 	}()
+}
+
+// Handle messages listens for new messages in channel and sends them to manager
+// Also listens for terminate sequence for shutting down the application
+func (a *Application) handleMessages(skus chan string, manager *Manager, cancel context.CancelFunc) {
+	for sku := range skus {
+		if IsTerminateSequence(sku) {
+			fmt.Println("Got terminate sequece, stopping server gracefully...")
+			cancel()
+			return
+		}
+
+		manager.HandleMessage(sku)
+	}
 }

@@ -25,6 +25,7 @@ func New(addr string, maxConn int, out chan string) *Server {
 
 // Start initializes listeners and waits for new connections
 func (s *Server) Start(ctx context.Context) error {
+	// errs chan will allow to child routines send an encountered error back to parent.
 	errs := make(chan error, 2)
 
 	ln, err := net.Listen("tcp", s.addr)
@@ -62,11 +63,12 @@ func listen(ctx context.Context, ln net.Listener, out chan string, errs chan err
 				if err == io.EOF {
 					continue
 				}
-				// send error to parent routine
 				errs <- fmt.Errorf("could not read incomming message: %s", err.Error())
 			}
 
 			out <- string(msg)
+
+			_ = conn.Close()
 		}
 	}
 }
