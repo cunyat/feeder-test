@@ -28,6 +28,7 @@ func ValidateSKU(value string) error {
 	return nil
 }
 
+// validateChar validates if a character is valid for the given position (i)
 func validateChar(i int, ch int32) error {
 	switch i {
 	case 0, 1, 2, 3:

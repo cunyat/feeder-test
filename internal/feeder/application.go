@@ -63,6 +63,7 @@ func (a *Application) Start() {
 
 	go a.handleMessages(a.skus, a.manager, cancel)
 
+	// run the server, it will return when encounters an error or the context is closed
 	if err := a.srv.Start(ctx); err != nil {
 		fmt.Printf("Got error from server: %s", err)
 	}

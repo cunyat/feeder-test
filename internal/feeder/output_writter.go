@@ -30,7 +30,7 @@ func (w *LogWritter) Close() error {
 // Write writes data from io.Reader and copies it into the output file
 // it will override any previous existing file
 func (w *LogWritter) Write(value string) {
-	_, err := fmt.Fprintf(w.file, "%s - %s", time.Now().Format(time.RFC3339), value)
+	_, err := fmt.Fprintf(w.file, "%s", value)
 	if err != nil {
 		fmt.Printf("error writting into log: %s", err)
 	}

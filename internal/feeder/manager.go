@@ -41,6 +41,7 @@ func (m *Manager) HandleMessage(sku string) {
 		m.countInvalid++
 		return
 	}
+	// store skus in uppercase
 	sku = strings.ToUpper(sku)
 	m.store.Insert(sku)
 }

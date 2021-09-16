@@ -61,5 +61,4 @@ For this, I transform all skus to uppercase when they are stored
 It's obious we need some sort of storage in order to check for duplicates and finally count valid, duplicateds and bad skus.
 I decided to implement a simple in memory store. It keeps skus sorted to optimize searching for duplicates.
 
-Also, it offers an implementation of io.Reader, so we could make use of os.Copy or other methods to write directly into a file a large set of skus.
-
+It allows to subscribe a function that will be called each time it gets a new not duplicated value, so we can log them into a file
